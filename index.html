@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HatemDz — Gate</title>
+  <style>
+    :root {
+      --bg-void: #010302;
+      --bg-panel: #060b08;
+      --bg-terminal: #030604;
+      --neon-green: #00ff66;
+      --neon-glow: rgba(0, 255, 102, 0.36);
+      --danger-red: #ff3b30;
+      --danger-bg: rgba(255, 59, 48, 0.16);
+      --text-main: #eafff2;
+      --text-muted: #82b396;
+      --border-grid: rgba(0, 255, 102, 0.34);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      background-color: var(--bg-void);
+      color: var(--text-main);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
+      position: relative;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    #matrixCanvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      opacity: 0.44;
+      pointer-events: none;
+    }
+
+    .cyber-grid-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      background-image:
+        linear-gradient(to right, rgba(0, 255, 102, 0.06) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 255, 102, 0.06) 1px, transparent 1px),
+        repeating-linear-gradient(
+          to bottom,
+          rgba(0, 0, 0, 0) 0px,
+          rgba(0, 0, 0, 0) 2px,
+          rgba(0, 0, 0, 0.36) 3px,
+          rgba(0, 0, 0, 0.36) 4px
+        );
+      background-size: 28px 28px, 28px 28px, 100% 4px;
+    }
+
+    .app-layer {
+      position: relative;
+      z-index: 2;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .top-header {
+      padding: 22px 16px 16px;
+      text-align: center;
+      background: rgba(6, 11, 8, 0.92);
+      border-bottom: 1px solid var(--border-grid);
+      box-shadow: 0 10px 36px rgba(0, 0, 0, 0.9);
+    }
+
+    .top-header .en-brand {
+      font-size: clamp(2.2rem, 7vw, 3.6rem);
+      font-weight: 900;
+      letter-spacing: 3px;
+      color: var(--neon-green);
+      text-shadow: 0 0 20px var(--neon-glow), 0 0 42px rgba(0, 255, 102, 0.24);
+      line-height: 1.15;
+    }
+
+    .top-header .ar-subtitle {
+      margin-top: 6px;
+      font-size: 0.98rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .main-stage {
+      flex: 1;
+      width: 100%;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .main-stage.full-mode {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    .auth-box {
+      width: 100%;
+      max-width: 540px;
+      margin: 22px 14px;
+      background: rgba(6, 11, 8, 0.95);
+      border: 1px solid var(--border-grid);
+      border-radius: 16px;
+      padding: 28px 22px;
+      box-shadow: 0 0 48px rgba(0, 0, 0, 0.95), 0 0 28px rgba(0, 255, 102, 0.16);
+      text-align: center;
+    }
+
+    .auth-box.locked {
+      border-color: rgba(255, 59, 48, 0.85);
+      box-shadow: 0 0 48px rgba(0, 0, 0, 0.96), 0 0 28px rgba(255, 59, 48, 0.28);
+    }
+
+    .monkey-arena {
+      width: 184px;
+      height: 184px;
+      margin: 0 auto 18px;
+      border-radius: 26px;
+      border: 1px solid var(--border-grid);
+      background:
+        radial-gradient(circle at 50% 30%, rgba(0, 255, 102, 0.16), rgba(3, 6, 4, 0.96) 72%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 32px rgba(0, 255, 102, 0.18), inset 0 0 20px rgba(0, 255, 102, 0.08);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .auth-box.locked .monkey-arena {
+      border-color: rgba(255, 59, 48, 0.8);
+      box-shadow: 0 0 32px rgba(255, 59, 48, 0.26);
+    }
+
+    #monkeyRig {
+      width: 164px;
+      height: 164px;
+      display: block;
+    }
+
+    .monkey-hand-group {
+      transition: transform 0.18s ease, opacity 0.15s ease;
+    }
+
+    .monkey-eye-ball {
+      transition: transform 0.1s ease-out;
+    }
+
+    .auth-form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .input-row {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .auth-input {
+      width: 100%;
+      padding: 15px 48px 15px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border-grid);
+      background: var(--bg-terminal);
+      color: var(--neon-green);
+      font-size: 1rem;
+      font-weight: 700;
+      outline: none;
+      direction: ltr;
+      text-align: center;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .auth-input:focus {
+      border-color: var(--neon-green);
+      box-shadow: 0 0 18px var(--neon-glow);
+    }
+
+    .auth-input:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .eye-toggle-btn {
+      position: absolute;
+      right: 10px;
+      width: 34px;
+      height: 34px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s ease, background-color 0.15s ease;
+    }
+
+    .eye-toggle-btn:hover:not(:disabled) {
+      color: var(--neon-green);
+      background: rgba(0, 255, 102, 0.08);
+    }
+
+    .eye-toggle-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .auth-btn {
+      padding: 15px 18px;
+      border-radius: 8px;
+      border: 1px solid var(--neon-green);
+      background: rgba(0, 255, 102, 0.16);
+      color: var(--neon-green);
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .auth-btn:hover:not(:disabled) {
+      background: var(--neon-green);
+      color: #010302;
+      box-shadow: 0 0 24px var(--neon-glow);
+    }
+
+    .auth-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .key-request-box {
+      margin-top: 18px;
+      padding: 16px;
+      border-radius: 10px;
+      background: rgba(0, 255, 102, 0.07);
+      border: 1px solid var(--border-grid);
+      color: var(--text-main);
+      font-size: 0.94rem;
+      line-height: 1.75;
+    }
+
+    .auth-box.locked .key-request-box {
+      background: var(--danger-bg);
+      border-color: rgba(255, 59, 48, 0.7);
+      color: #ffd6d2;
+    }
+
+    .key-emoji {
+      font-size: 1.35rem;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    .tg-btn {
+      margin-top: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 13px 24px;
+      border-radius: 8px;
+      border: 1px solid var(--neon-green);
+      background: rgba(0, 255, 102, 0.15);
+      color: var(--neon-green);
+      text-decoration: none;
+      font-size: 0.96rem;
+      font-weight: 800;
+      box-shadow: 0 0 20px rgba(0, 255, 102, 0.18);
+      transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .tg-btn:hover {
+      background: var(--neon-green);
+      color: #010302;
+      box-shadow: 0 0 26px var(--neon-glow);
+    }
+
+    .tg-icon {
+      width: 21px;
+      height: 21px;
+      flex-shrink: 0;
+      fill: currentColor;
+    }
+
+    .full-workspace {
+      width: 100%;
+      display: none;
+      flex-direction: column;
+    }
+
+    .full-workspace.visible {
+      display: flex;
+    }
+
+    .full-site-host {
+      width: 100%;
+      height: 100vh;
+      min-height: 100vh;
+      background: var(--bg-terminal);
+    }
+
+    .full-site-frame {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+    }
+
+    .tail-block {
+      width: 100%;
+      background: rgba(6, 11, 8, 0.95);
+      border-top: 1px solid var(--border-grid);
+      padding: 30px 18px;
+      text-align: center;
+      box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.92);
+    }
+
+    .tail-block .en-handle {
+      font-size: clamp(2rem, 6.5vw, 3.3rem);
+      font-weight: 900;
+      letter-spacing: 2.5px;
+      color: var(--neon-green);
+      text-shadow: 0 0 20px var(--neon-glow);
+      line-height: 1.2;
+    }
+
+    .tail-block .ar-copy {
+      margin-top: 12px;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-main);
+      line-height: 1.8;
+    }
+
+    .site-footer {
+      padding: 14px 18px;
+      text-align: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: rgba(6, 11, 8, 0.92);
+      border-top: 1px solid var(--border-grid);
+    }
+  </style>
+</head>
+<body>
+  <canvas id="matrixCanvas" aria-hidden="true"></canvas>
+  <div class="cyber-grid-bg" aria-hidden="true"></div>
+
+  <div class="app-layer">
+    <header class="top-header">
+      <div class="en-brand">HatemDz</div>
+      <p class="ar-subtitle">واجهة الدخول والعرض المباشر</p>
+    </header>
+
+    <main id="mainStage" class="main-stage">
+      <section id="authCard" class="auth-box" aria-label="نظام التحقق">
+        <div class="monkey-arena" aria-hidden="true">
+          <svg id="monkeyRig" viewBox="0 0 160 160">
+            <!-- Ears -->
+            <circle cx="28" cy="78" r="18" fill="#8b5424" stroke="#00ff66" stroke-width="1.6" />
+            <circle cx="28" cy="78" r="10" fill="#d89b66" />
+            <circle cx="132" cy="78" r="18" fill="#8b5424" stroke="#00ff66" stroke-width="1.6" />
+            <circle cx="132" cy="78" r="10" fill="#d89b66" />
+
+            <!-- Head -->
+            <circle cx="80" cy="74" r="44" fill="#8b5424" stroke="#00ff66" stroke-width="1.8" />
+
+            <!-- Tan Face Mask -->
+            <ellipse cx="64" cy="71" rx="15" ry="17" fill="#f3c59e" />
+            <ellipse cx="96" cy="71" rx="15" ry="17" fill="#f3c59e" />
+            <ellipse cx="80" cy="88" rx="25" ry="16" fill="#f3c59e" />
+
+            <!-- Eyes & Pupils (move together while typing) -->
+            <circle cx="64" cy="70" r="7.5" fill="#ffffff" />
+            <circle cx="96" cy="70" r="7.5" fill="#ffffff" />
+            <circle id="leftEyeDot" class="monkey-eye-ball" cx="64" cy="70" r="3.6" fill="#080c0a" />
+            <circle id="rightEyeDot" class="monkey-eye-ball" cx="96" cy="70" r="3.6" fill="#080c0a" />
+
+            <!-- Nostrils & Mouth -->
+            <circle cx="75" cy="85" r="2" fill="#5c3312" />
+            <circle cx="85" cy="85" r="2" fill="#5c3312" />
+            <path id="mouthCurve" d="M69 94 Q80 102 91 94" fill="none" stroke="#5c3312" stroke-width="3" stroke-linecap="round" />
+
+            <!-- Original Oval Hands Covering Eyes -->
+            <g id="handsGroup" class="monkey-hand-group">
+              <ellipse cx="60" cy="74" rx="17" ry="18" fill="#9c602c" stroke="#00ff66" stroke-width="1.6" />
+              <ellipse cx="100" cy="74" rx="17" ry="18" fill="#9c602c" stroke="#00ff66" stroke-width="1.6" />
+            </g>
+          </svg>
+        </div>
+
+        <form id="authForm" class="auth-form" autocomplete="off">
+          <div class="input-row">
+            <input
+              id="passwordInput"
+              class="auth-input"
+              type="password"
+              placeholder="Password..."
+              aria-label="كلمة المرور"
+              required
+            />
+            <button
+              id="toggleVisibilityBtn"
+              class="eye-toggle-btn"
+              type="button"
+              aria-label="إظهار أو إخفاء كلمة المرور"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </button>
+          </div>
+          <button id="submitAuth" class="auth-btn" type="submit">
+            تنفيذ الدخول
+          </button>
+        </form>
+
+        <div id="keyPanel" class="key-request-box">
+          <p id="keyPanelText">
+            <span class="key-emoji" aria-hidden="true">🔑</span>
+            تواصل مع المطور للحصول على مفتاح الدخول:
+          </p>
+          <a
+            class="tg-btn"
+            href="https://t.me/HatemDz12"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="تواصل مع المطور HatemDz12 للحصول على مفتاح"
+          >
+            <svg class="tg-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M21.944 4.507a1.5 1.5 0 0 0-1.61-.242L3.168 11.14a1.5 1.5 0 0 0 .122 2.83l4.18 1.337 1.607 5.052a1.5 1.5 0 0 0 2.558.554l2.31-2.37 4.496 3.31a1.5 1.5 0 0 0 2.382-.916l2.587-14.212a1.5 1.5 0 0 0-.266-1.312zM9.22 14.482l8.63-6.776-6.516 7.98-.32 3.175-1.794-4.379z" />
+            </svg>
+            <span class="key-emoji" aria-hidden="true">🔑</span>
+            <span>تواصل مع المطور — HatemDz12</span>
+          </a>
+        </div>
+      </section>
+
+      <section id="workspace" class="full-workspace" aria-label="عرض الموقع كامل الشاشة">
+        <div class="full-site-host" id="fullSiteHost">
+          <iframe
+            id="targetFrame"
+            class="full-site-frame"
+            src="https://b7xha.github.io/nv/"
+            title="الموقع المستهدف كامل الشاشة"
+            loading="eager"
+            referrerpolicy="strict-origin-when-cross-origin"
+          ></iframe>
+        </div>
+
+        <section class="tail-block" aria-label="القسم الأخير">
+          <div class="en-handle">HatemDz</div>
+          <p class="ar-copy">
+            تم تشغيل الموقع بكامل العرض داخل الصفحة. يمكنك متابعة القناة الرسمية عبر الرابط المباشر:
+          </p>
+          <a
+            class="tg-btn"
+            href="https://t.me/HatemDz3128"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="قناة تليجرام HatemDz3128"
+          >
+            <svg class="tg-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M21.944 4.507a1.5 1.5 0 0 0-1.61-.242L3.168 11.14a1.5 1.5 0 0 0 .122 2.83l4.18 1.337 1.607 5.052a1.5 1.5 0 0 0 2.558.554l2.31-2.37 4.496 3.31a1.5 1.5 0 0 0 2.382-.916l2.587-14.212a1.5 1.5 0 0 0-.266-1.312zM9.22 14.482l8.63-6.776-6.516 7.98-.32 3.175-1.794-4.379z" />
+            </svg>
+            <span>قناة تليجرام — HatemDz3128</span>
+          </a>
+        </section>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      HatemDz
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      const TARGET_URL = "https://b7xha.github.io/nv/";
+      const ACCESS_PASS = "HatemDz";
+      const LOCK_KEY = "hatemdz_gate_locked_v8";
+
+      const mainStage = document.getElementById("mainStage");
+      const authCard = document.getElementById("authCard");
+      const authForm = document.getElementById("authForm");
+      const passwordInput = document.getElementById("passwordInput");
+      const toggleVisibilityBtn = document.getElementById("toggleVisibilityBtn");
+      const submitAuth = document.getElementById("submitAuth");
+      const keyPanelText = document.getElementById("keyPanelText");
+      const workspace = document.getElementById("workspace");
+      const fullSiteHost = document.getElementById("fullSiteHost");
+
+      const handsGroup = document.getElementById("handsGroup");
+      const leftEyeDot = document.getElementById("leftEyeDot");
+      const rightEyeDot = document.getElementById("rightEyeDot");
+      const mouthCurve = document.getElementById("mouthCurve");
+
+      let keyStep = 0;
+      let isLockedState = false;
+
+      function updateEyesWithTyping(stepDelta) {
+        if (isLockedState || !passwordInput) return;
+        keyStep += stepDelta;
+        const len = Math.min(passwordInput.value.length, 24);
+        const progressX = ((len / 24) - 0.5) * 7.5 + Math.sin(keyStep * 1.4) * 1.8;
+        const progressY = Math.cos(keyStep * 1.9) * 2.2 + 0.6;
+        const eyeTransform = "translate(" + progressX.toFixed(2) + " " + progressY.toFixed(2) + ")";
+
+        if (leftEyeDot) {
+          leftEyeDot.setAttribute("transform", eyeTransform);
+        }
+        if (rightEyeDot) {
+          rightEyeDot.setAttribute("transform", eyeTransform);
+        }
+
+        const isHidden = passwordInput.type === "password";
+        if (handsGroup) {
+          if (isHidden) {
+            handsGroup.setAttribute("opacity", "1");
+            handsGroup.setAttribute("transform", "translate(0 0)");
+          } else {
+            handsGroup.setAttribute("opacity", "0");
+            handsGroup.setAttribute("transform", "translate(0 35)");
+          }
+        }
+
+        if (mouthCurve) {
+          const curveY = isHidden ? 94 + Math.abs(Math.sin(keyStep)) * 3 : 99;
+          mouthCurve.setAttribute("d", "M69 94 Q80 " + curveY.toFixed(1) + " 91 94");
+        }
+      }
+
+      if (toggleVisibilityBtn && passwordInput) {
+        toggleVisibilityBtn.addEventListener("click", function () {
+          if (isLockedState) return;
+          passwordInput.type = passwordInput.type === "password" ? "text" : "password";
+          updateEyesWithTyping(1);
+        });
+      }
+
+      if (passwordInput) {
+        passwordInput.addEventListener("input", function () {
+          updateEyesWithTyping(1);
+        });
+        passwordInput.addEventListener("keydown", function () {
+          updateEyesWithTyping(0.5);
+        });
+      }
+
+      function mountFullViewportSite() {
+        if (!fullSiteHost) return;
+        fullSiteHost.innerHTML = "";
+        const iframe = document.createElement("iframe");
+        iframe.className = "full-site-frame";
+        iframe.src = TARGET_URL;
+        iframe.title = "الموقع المستهدف كامل الشاشة";
+        iframe.loading = "eager";
+        iframe.setAttribute("referrerpolicy", "strict-origin-when-cross-origin");
+        fullSiteHost.appendChild(iframe);
+      }
+
+      function engageLockdown(msg) {
+        isLockedState = true;
+        try {
+          sessionStorage.setItem(LOCK_KEY, "1");
+        } catch (err) {
+          // Ignore sessionStorage restrictions
+        }
+        authCard.classList.add("locked");
+        passwordInput.value = "";
+        passwordInput.type = "password";
+        passwordInput.disabled = true;
+        if (toggleVisibilityBtn) {
+          toggleVisibilityBtn.disabled = true;
+        }
+        submitAuth.disabled = true;
+        if (leftEyeDot) {
+          leftEyeDot.setAttribute("transform", "translate(0 0)");
+        }
+        if (rightEyeDot) {
+          rightEyeDot.setAttribute("transform", "translate(0 0)");
+        }
+        if (handsGroup) {
+          handsGroup.setAttribute("opacity", "1");
+          handsGroup.setAttribute("transform", "translate(0 0)");
+        }
+        if (mouthCurve) {
+          mouthCurve.setAttribute("d", "M69 100 Q80 92 91 100");
+        }
+        keyPanelText.innerHTML = '<span class="key-emoji" aria-hidden="true">🔑</span> ' + msg;
+      }
+
+      function grantAccess() {
+        try {
+          sessionStorage.removeItem(LOCK_KEY);
+        } catch (err) {
+          // Ignore sessionStorage restrictions
+        }
+        authCard.style.display = "none";
+        if (mainStage) {
+          mainStage.classList.add("full-mode");
+        }
+        workspace.classList.add("visible");
+        mountFullViewportSite();
+      }
+
+      updateEyesWithTyping(0);
+
+      try {
+        if (sessionStorage.getItem(LOCK_KEY) === "1") {
+          engageLockdown(
+            "النظام مقفل بسبب محاولة دخول خاطئة. تواصل مع المطور للحصول على مفتاح:"
+          );
+        }
+      } catch (err) {
+        // Ignore sessionStorage read errors
+      }
+
+      if (authForm && passwordInput) {
+        authForm.addEventListener("submit", function (event) {
+          event.preventDefault();
+          if (passwordInput.value === ACCESS_PASS) {
+            grantAccess();
+          } else {
+            engageLockdown(
+              "تم إغلاق النظام لأن كلمة المرور غير صحيحة. تواصل مع المطور للحصول على مفتاح:"
+            );
+          }
+        });
+      }
+
+      const canvas = document.getElementById("matrixCanvas");
+      if (canvas) {
+        const ctx = canvas.getContext("2d");
+        const glyphs = "01ABCDEFHATEMDZ{}[]<>/\\*#$@&";
+        const fontSize = 15;
+        let columns = 0;
+        let drops = [];
+
+        function resizeMatrix() {
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
+          columns = Math.max(1, Math.floor(canvas.width / fontSize));
+          drops = Array.from({ length: columns }, function () {
+            return Math.floor(Math.random() * (canvas.height / fontSize));
+          });
+        }
+
+        function drawMatrix() {
+          if (!ctx) return;
+          ctx.fillStyle = "rgba(1, 3, 2, 0.07)";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = "#00ff66";
+          ctx.font = "bold " + fontSize + "px monospace";
+
+          for (let i = 0; i < drops.length; i++) {
+            const char = glyphs.charAt(Math.floor(Math.random() * glyphs.length));
+            ctx.fillText(char, i * fontSize, drops[i] * fontSize);
+            if (drops[i] * fontSize > canvas.height && Math.random() > 0.972) {
+              drops[i] = 0;
+            }
+            drops[i]++;
+          }
+        }
+
+        resizeMatrix();
+        window.addEventListener("resize", resizeMatrix);
+        setInterval(drawMatrix, 36);
+      }
+    })();
+  </script>
+</body>
+</html>
